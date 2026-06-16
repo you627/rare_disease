@@ -1,0 +1,404 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>账号 - 罕见病问答</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        background: #f5f7fb;
+        color: #1f2937;
+        min-height: 100vh;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      .card {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+        padding: 28px;
+        width: min(420px, 92vw);
+      }
+      h1 {
+        margin: 0 0 6px;
+        font-size: 22px;
+      }
+      .muted {
+        color: #6b7280;
+        margin-bottom: 18px;
+        font-size: 14px;
+        line-height: 1.5;
+      }
+      .steps {
+        display: flex;
+        gap: 8px;
+        margin-bottom: 20px;
+        font-size: 13px;
+      }
+      .step {
+        flex: 1;
+        text-align: center;
+        padding: 8px 6px;
+        border-radius: 8px;
+        background: #f3f4f6;
+        color: #6b7280;
+      }
+      .step.active {
+        background: #dbeafe;
+        color: #1d4ed8;
+        font-weight: bold;
+      }
+      .step.done {
+        background: #ecfdf5;
+        color: #047857;
+      }
+      .tabs {
+        display: flex;
+        border-bottom: 1px solid #e5e7eb;
+        margin-bottom: 18px;
+      }
+      .tab {
+        flex: 1;
+        padding: 10px;
+        text-align: center;
+        cursor: pointer;
+        font-size: 14px;
+        color: #6b7280;
+        border-bottom: 2px solid transparent;
+        margin-bottom: -1px;
+        background: none;
+        border-top: none;
+        border-left: none;
+        border-right: none;
+      }
+      .tab.active {
+        color: #2563eb;
+        border-bottom-color: #2563eb;
+        font-weight: bold;
+      }
+      label {
+        display: block;
+        font-size: 14px;
+        margin-bottom: 6px;
+      }
+      input {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        padding: 10px;
+        margin-bottom: 14px;
+        font-size: 14px;
+      }
+      .primary-btn {
+        width: 100%;
+        border: none;
+        border-radius: 8px;
+        padding: 11px;
+        cursor: pointer;
+        font-size: 15px;
+        background: #2563eb;
+        color: white;
+        margin-top: 4px;
+      }
+      .primary-btn:disabled {
+        background: #93c5fd;
+        cursor: not-allowed;
+      }
+      .switch-hint {
+        margin-top: 14px;
+        font-size: 13px;
+        color: #6b7280;
+        text-align: center;
+      }
+      .switch-hint button {
+        background: none;
+        border: none;
+        color: #2563eb;
+        cursor: pointer;
+        font-size: 13px;
+        padding: 0 4px;
+        text-decoration: underline;
+      }
+      .error {
+        color: #b91c1c;
+        font-size: 13px;
+        min-height: 20px;
+        margin-top: 8px;
+      }
+      .success {
+        color: #047857;
+        font-size: 13px;
+        min-height: 20px;
+        margin-top: 8px;
+      }
+      .panel {
+        display: none;
+      }
+      .panel.active {
+        display: block;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="card">
+      <h1>罕见病问答助手</h1>
+      <div class="muted" id="pageDesc">
+        首次使用请先<strong>注册账号</strong>，注册成功后会自动登录并进入对话。
+      </div>
+
+      <div class="steps">
+        <div class="step active" id="stepRegister">① 注册账号</div>
+        <div class="step" id="stepLogin">② 登录使用</div>
+      </div>
+
+      <div class="tabs">
+        <button type="button" class="tab active" id="tabRegister" data-mode="register">
+          注册（新用户）
+        </button>
+        <button type="button" class="tab" id="tabLogin" data-mode="login">
+          登录（已有账号）
+        </button>
+      </div>
+
+      <div id="panelRegister" class="panel active">
+        <label for="regUsername">用户名</label>
+        <input
+          id="regUsername"
+          autocomplete="username"
+          placeholder="设置你的用户名"
+        />
+        <label for="regPassword">密码</label>
+        <input
+          id="regPassword"
+          type="password"
+          autocomplete="new-password"
+          placeholder="可留空"
+        />
+        <button type="button" class="primary-btn" id="registerSubmitBtn">
+          注册并进入对话
+        </button>
+        <div class="switch-hint">
+          已有账号？
+          <button type="button" id="goLoginFromRegister">去登录</button>
+        </div>
+      </div>
+
+      <div id="panelLogin" class="panel">
+        <label for="loginUsername">用户名</label>
+        <input
+          id="loginUsername"
+          autocomplete="username"
+          placeholder="输入已注册的用户名"
+        />
+        <label for="loginPassword">密码</label>
+        <input
+          id="loginPassword"
+          type="password"
+          autocomplete="current-password"
+          placeholder="输入密码"
+        />
+        <button type="button" class="primary-btn" id="loginSubmitBtn">
+          登录并进入对话
+        </button>
+        <div class="switch-hint">
+          还没有账号？
+          <button type="button" id="goRegisterFromLogin">先去注册</button>
+        </div>
+      </div>
+
+      <div id="success" class="success"></div>
+      <div id="error" class="error"></div>
+    </div>
+    <script>
+      const TOKEN_KEY = "rag_token";
+      const USER_KEY = "rag_username";
+
+      const params = new URLSearchParams(window.location.search);
+      const defaultMode = params.get("mode") === "login" ? "login" : "register";
+
+      if (localStorage.getItem(TOKEN_KEY)) {
+        window.location.replace("/chat");
+      }
+
+      const pageDesc = document.getElementById("pageDesc");
+      const stepRegister = document.getElementById("stepRegister");
+      const stepLogin = document.getElementById("stepLogin");
+      const tabRegister = document.getElementById("tabRegister");
+      const tabLogin = document.getElementById("tabLogin");
+      const panelRegister = document.getElementById("panelRegister");
+      const panelLogin = document.getElementById("panelLogin");
+      const errorEl = document.getElementById("error");
+      const successEl = document.getElementById("success");
+
+      const regUsernameEl = document.getElementById("regUsername");
+      const regPasswordEl = document.getElementById("regPassword");
+      const loginUsernameEl = document.getElementById("loginUsername");
+      const loginPasswordEl = document.getElementById("loginPassword");
+      const registerSubmitBtn = document.getElementById("registerSubmitBtn");
+      const loginSubmitBtn = document.getElementById("loginSubmitBtn");
+
+      let mode = defaultMode;
+
+      function setMode(next) {
+        mode = next;
+        const isRegister = mode === "register";
+        tabRegister.classList.toggle("active", isRegister);
+        tabLogin.classList.toggle("active", !isRegister);
+        panelRegister.classList.toggle("active", isRegister);
+        panelLogin.classList.toggle("active", !isRegister);
+        stepRegister.classList.toggle("active", isRegister);
+        stepRegister.classList.toggle("done", !isRegister);
+        stepLogin.classList.toggle("active", !isRegister);
+        stepLogin.classList.toggle("done", false);
+        pageDesc.innerHTML = isRegister
+          ? "首次使用请先<strong>注册账号</strong>，注册成功后会自动登录并进入对话。"
+          : "请输入已注册的账号登录。若还没有账号，请先切换到「注册」。";
+        errorEl.textContent = "";
+        successEl.textContent = "";
+      }
+
+      function switchToLogin(prefillUsername) {
+        if (prefillUsername) {
+          loginUsernameEl.value = prefillUsername;
+          loginPasswordEl.focus();
+        }
+        setMode("login");
+      }
+
+      function switchToRegister(prefillUsername) {
+        if (prefillUsername) {
+          regUsernameEl.value = prefillUsername;
+          regPasswordEl.focus();
+        }
+        setMode("register");
+      }
+
+      tabRegister.addEventListener("click", () => setMode("register"));
+      tabLogin.addEventListener("click", () => setMode("login"));
+      document
+        .getElementById("goLoginFromRegister")
+        .addEventListener("click", () => switchToLogin(regUsernameEl.value.trim()));
+      document
+        .getElementById("goRegisterFromLogin")
+        .addEventListener("click", () => switchToRegister(loginUsernameEl.value.trim()));
+
+      function saveSession(data, username) {
+        const token = data && data.access_token;
+        if (!token) {
+          throw new Error("服务器未返回登录凭证，请重试");
+        }
+        localStorage.setItem(TOKEN_KEY, token);
+        localStorage.setItem(USER_KEY, (data.user && data.user.username) || username);
+      }
+
+      async function submitRegister() {
+        errorEl.textContent = "";
+        successEl.textContent = "";
+        const username = regUsernameEl.value.trim();
+        const password = regPasswordEl.value;
+        if (!username) {
+          errorEl.textContent = "请填写用户名";
+          regUsernameEl.focus();
+          return;
+        }
+        registerSubmitBtn.disabled = true;
+        loginSubmitBtn.disabled = true;
+        try {
+          const res = await fetch("/auth/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, password }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            const detail = data.detail;
+            const msg = typeof detail === "string" ? detail : "注册失败";
+            if (res.status === 400 && typeof detail === "string" && detail.includes("已注册")) {
+              errorEl.textContent = "该用户名已注册，请直接登录。";
+              switchToLogin(username);
+              return;
+            }
+            errorEl.textContent = msg;
+            return;
+          }
+          saveSession(data, username);
+          successEl.textContent = "注册成功，正在进入对话…";
+          stepRegister.classList.remove("active");
+          stepRegister.classList.add("done");
+          stepLogin.classList.add("active");
+          setTimeout(() => window.location.replace("/chat"), 400);
+        } catch (e) {
+          errorEl.textContent = String(e);
+        } finally {
+          registerSubmitBtn.disabled = false;
+          loginSubmitBtn.disabled = false;
+        }
+      }
+
+      async function submitLogin() {
+        errorEl.textContent = "";
+        successEl.textContent = "";
+        const username = loginUsernameEl.value.trim();
+        const password = loginPasswordEl.value;
+        if (!username) {
+          errorEl.textContent = "请填写用户名";
+          loginUsernameEl.focus();
+          return;
+        }
+        registerSubmitBtn.disabled = true;
+        loginSubmitBtn.disabled = true;
+        try {
+          const res = await fetch("/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, password }),
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            const detail = data.detail;
+            const msg =
+              typeof detail === "string"
+                ? detail
+                : "登录失败";
+            errorEl.textContent = msg;
+            return;
+          }
+          saveSession(data, username);
+          successEl.textContent = "登录成功，正在进入对话…";
+          stepLogin.classList.add("done");
+          setTimeout(() => window.location.replace("/chat"), 400);
+        } catch (e) {
+          errorEl.textContent = String(e);
+        } finally {
+          registerSubmitBtn.disabled = false;
+          loginSubmitBtn.disabled = false;
+        }
+      }
+
+      registerSubmitBtn.addEventListener("click", submitRegister);
+      loginSubmitBtn.addEventListener("click", submitLogin);
+
+      regPasswordEl.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          submitRegister();
+        }
+      });
+      loginPasswordEl.addEventListener("keydown", (e) => {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          submitLogin();
+        }
+      });
+
+      setMode(defaultMode);
+      if (defaultMode === "login" && params.get("username")) {
+        loginUsernameEl.value = params.get("username");
+      }
+    </script>
+  </body>
+</html>

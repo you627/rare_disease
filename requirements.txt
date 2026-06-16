@@ -1,0 +1,12 @@
+pandas
+numpy
+scikit-learn
+rank-bm25
+fastapi
+uvicorn
+python-dotenv
+openai
+sqlalchemy>=2.0
+python-jose[cryptography]
+bcrypt
+python-multipart

@@ -1,0 +1,12 @@
+.venv
+.idea
+__pycache__
+**/__pycache__
+*.pyc
+.env
+.git
+.gitignore
+data/app.db
+*.md
+smoke_test.py
+terminals

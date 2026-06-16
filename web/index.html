@@ -1,0 +1,234 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Rare Disease RAG Chat</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        background: #f5f7fb;
+        color: #1f2937;
+      }
+      .container {
+        max-width: 860px;
+        margin: 32px auto;
+        padding: 0 16px;
+      }
+      .card {
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 8px 24px rgba(0, 0, 0, 0.08);
+        padding: 20px;
+      }
+      h1 {
+        margin: 0 0 6px;
+        font-size: 24px;
+      }
+      .muted {
+        color: #6b7280;
+        margin-bottom: 16px;
+      }
+      textarea {
+        width: 100%;
+        min-height: 96px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        padding: 10px;
+        font-size: 14px;
+        box-sizing: border-box;
+      }
+      .row {
+        display: flex;
+        gap: 8px;
+        margin-top: 12px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      input[type="number"] {
+        width: 100px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        padding: 8px;
+      }
+      .toggle {
+        display: inline-flex;
+        align-items: center;
+        gap: 6px;
+        font-size: 14px;
+      }
+      button {
+        border: none;
+        border-radius: 8px;
+        background: #2563eb;
+        color: white;
+        padding: 10px 14px;
+        cursor: pointer;
+      }
+      button:disabled {
+        background: #93c5fd;
+        cursor: not-allowed;
+      }
+      pre {
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        background: #f9fafb;
+        padding: 10px;
+        border-radius: 8px;
+        border: 1px solid #e5e7eb;
+      }
+      .section {
+        margin-top: 16px;
+      }
+      .grid {
+        display: grid;
+        grid-template-columns: repeat(2, minmax(220px, 1fr));
+        gap: 8px;
+      }
+      .grid input,
+      .grid textarea {
+        width: 100%;
+        box-sizing: border-box;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        padding: 8px;
+        font-size: 14px;
+      }
+      .grid textarea {
+        min-height: 72px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <div class="card">
+        <h1>罕见病问答助手</h1>
+        <div class="muted">基于 RAG 的最小可用前端</div>
+        <textarea id="question" placeholder="输入你的问题，例如：根据以下症状可能的疾病方向是什么？"></textarea>
+        <div class="section">
+          <strong>患者特征（可选，辅助建议用）</strong>
+          <div class="grid">
+            <input id="age" placeholder="年龄，如：8岁" />
+            <input id="sex" placeholder="性别，如：女" />
+            <input id="chiefComplaint" placeholder="主诉，如：反复呼吸困难" />
+            <input id="duration" placeholder="病程，如：6个月" />
+            <textarea id="keySymptoms" placeholder="关键症状（可多条）"></textarea>
+            <textarea id="history" placeholder="既往史/家族史"></textarea>
+            <textarea id="labsOrImaging" placeholder="检查结果（化验/影像/基因）"></textarea>
+          </div>
+        </div>
+        <div class="row">
+          <label>top_k: <input id="topk" type="number" value="5" min="1" max="20" /></label>
+          <label class="toggle">
+            <input id="useRag" type="checkbox" checked />
+            使用 RAG 检索
+          </label>
+          <button id="askBtn">提问</button>
+        </div>
+
+        <div class="section">
+          <strong>回答</strong>
+          <pre id="answer">等待提问...</pre>
+        </div>
+        <div class="section">
+          <strong>安全信息</strong>
+          <pre id="safety">-</pre>
+        </div>
+        <div class="section">
+          <strong>引用</strong>
+          <pre id="citations">-</pre>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      const askBtn = document.getElementById("askBtn");
+      const questionEl = document.getElementById("question");
+      const topkEl = document.getElementById("topk");
+      const useRagEl = document.getElementById("useRag");
+      const ageEl = document.getElementById("age");
+      const sexEl = document.getElementById("sex");
+      const chiefComplaintEl = document.getElementById("chiefComplaint");
+      const keySymptomsEl = document.getElementById("keySymptoms");
+      const durationEl = document.getElementById("duration");
+      const historyEl = document.getElementById("history");
+      const labsOrImagingEl = document.getElementById("labsOrImaging");
+      const answerEl = document.getElementById("answer");
+      const safetyEl = document.getElementById("safety");
+      const citationsEl = document.getElementById("citations");
+
+      async function ask() {
+        const question = questionEl.value.trim();
+        const top_k = Number(topkEl.value || 5);
+        const use_rag = Boolean(useRagEl.checked);
+        const age = ageEl.value.trim();
+        const sex = sexEl.value.trim();
+        const chief_complaint = chiefComplaintEl.value.trim();
+        const key_symptoms = keySymptomsEl.value.trim();
+        const duration = durationEl.value.trim();
+        const history = historyEl.value.trim();
+        const labs_or_imaging = labsOrImagingEl.value.trim();
+        if (!question) {
+          answerEl.textContent = "请先输入问题。";
+          return;
+        }
+        askBtn.disabled = true;
+        answerEl.textContent = "思考中...";
+        safetyEl.textContent = "-";
+        citationsEl.textContent = "-";
+
+        try {
+          const res = await fetch("/ask", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              question,
+              top_k,
+              use_rag,
+              age,
+              sex,
+              chief_complaint,
+              key_symptoms,
+              duration,
+              history,
+              labs_or_imaging,
+            }),
+          });
+          const raw = await res.text();
+          let data = null;
+          try {
+            data = raw ? JSON.parse(raw) : {};
+          } catch {
+            answerEl.textContent =
+              `请求失败 (${res.status})：服务器返回的不是 JSON。\n` +
+              `常见原因是网关/进程 500（纯文本 Internal Server Error）。原文片段：\n${raw.slice(0, 800)}`;
+            return;
+          }
+          if (!res.ok) {
+            const detail = data.detail;
+            const msg =
+              typeof detail === "string"
+                ? detail
+                : detail != null
+                  ? JSON.stringify(detail)
+                  : JSON.stringify(data);
+            answerEl.textContent = `请求失败 (${res.status}): ${msg}`;
+            return;
+          }
+          const modeLabel = data.mode === "rag" ? "RAG 模式" : "无 RAG 模式";
+          const profileLabel = data.patient_profile_used ? "已使用患者特征" : "未使用患者特征";
+          answerEl.textContent = `[${modeLabel} | ${profileLabel}]\n\n${data.answer || ""}`;
+          safetyEl.textContent = JSON.stringify(data.safety || {}, null, 2);
+          citationsEl.textContent = JSON.stringify(data.citations || [], null, 2);
+        } catch (e) {
+          answerEl.textContent = `请求异常: ${e}`;
+        } finally {
+          askBtn.disabled = false;
+        }
+      }
+
+      askBtn.addEventListener("click", ask);
+    </script>
+  </body>
+</html>

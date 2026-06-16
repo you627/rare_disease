@@ -1,0 +1,477 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>对话 - 罕见病问答</title>
+    <style>
+      * {
+        box-sizing: border-box;
+      }
+      body {
+        font-family: Arial, sans-serif;
+        margin: 0;
+        background: #f0f4fa;
+        color: #1f2937;
+        height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      header {
+        background: #fff;
+        border-bottom: 1px solid #e5e7eb;
+        padding: 10px 16px;
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        gap: 12px;
+      }
+      header h1 {
+        margin: 0;
+        font-size: 18px;
+      }
+      .layout {
+        flex: 1;
+        display: flex;
+        min-height: 0;
+      }
+      aside {
+        width: 260px;
+        background: #fff;
+        border-right: 1px solid #e5e7eb;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+      }
+      .aside-head {
+        padding: 12px;
+        border-bottom: 1px solid #e5e7eb;
+      }
+      .conv-list {
+        flex: 1;
+        overflow-y: auto;
+        padding: 8px;
+      }
+      .conv-item {
+        padding: 10px;
+        border-radius: 8px;
+        cursor: pointer;
+        font-size: 14px;
+        margin-bottom: 4px;
+        border: 1px solid transparent;
+      }
+      .conv-item:hover {
+        background: #f3f4f6;
+      }
+      .conv-item.active {
+        background: #eff6ff;
+        border-color: #bfdbfe;
+      }
+      .conv-item small {
+        display: block;
+        color: #6b7280;
+        font-size: 12px;
+        margin-top: 4px;
+      }
+      main {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
+        min-height: 0;
+        min-width: 0;
+      }
+      .messages {
+        flex: 1;
+        overflow-y: auto;
+        padding: 16px;
+      }
+      .msg {
+        max-width: 780px;
+        margin-bottom: 14px;
+        padding: 12px 14px;
+        border-radius: 10px;
+        white-space: pre-wrap;
+        word-wrap: break-word;
+        font-size: 14px;
+        line-height: 1.5;
+      }
+      .msg.user {
+        background: #dbeafe;
+        margin-left: auto;
+      }
+      .msg.assistant {
+        background: #fff;
+        border: 1px solid #e5e7eb;
+      }
+      .msg .meta {
+        font-size: 12px;
+        color: #6b7280;
+        margin-bottom: 6px;
+      }
+      .composer {
+        background: #fff;
+        border-top: 1px solid #e5e7eb;
+        padding: 12px 16px;
+      }
+      .profile-toggle {
+        font-size: 13px;
+        color: #2563eb;
+        cursor: pointer;
+        margin-bottom: 8px;
+        user-select: none;
+      }
+      .profile-grid {
+        display: none;
+        grid-template-columns: repeat(2, minmax(160px, 1fr));
+        gap: 8px;
+        margin-bottom: 10px;
+      }
+      .profile-grid.open {
+        display: grid;
+      }
+      .profile-grid input,
+      .profile-grid textarea {
+        width: 100%;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        padding: 8px;
+        font-size: 13px;
+      }
+      .profile-grid textarea {
+        min-height: 60px;
+      }
+      textarea#question {
+        width: 100%;
+        min-height: 72px;
+        border: 1px solid #d1d5db;
+        border-radius: 8px;
+        padding: 10px;
+        font-size: 14px;
+        resize: vertical;
+      }
+      .composer-row {
+        display: flex;
+        gap: 8px;
+        margin-top: 8px;
+        align-items: center;
+        flex-wrap: wrap;
+      }
+      button {
+        border: none;
+        border-radius: 8px;
+        padding: 8px 12px;
+        cursor: pointer;
+        font-size: 14px;
+      }
+      .btn-primary {
+        background: #2563eb;
+        color: #fff;
+      }
+      .btn-secondary {
+        background: #e5e7eb;
+        color: #1f2937;
+      }
+      .btn-danger {
+        background: #fee2e2;
+        color: #991b1b;
+      }
+      button:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+      }
+      .empty {
+        color: #6b7280;
+        text-align: center;
+        margin-top: 40px;
+      }
+      .citations {
+        margin-top: 8px;
+        font-size: 12px;
+        color: #4b5563;
+      }
+    </style>
+  </head>
+  <body>
+    <header>
+      <h1>罕见病问答 · <span id="usernameLabel">...</span></h1>
+      <div>
+        <button class="btn-secondary" id="logoutBtn" type="button">退出</button>
+      </div>
+    </header>
+    <div class="layout">
+      <aside>
+        <div class="aside-head">
+          <button class="btn-primary" id="newConvBtn" type="button" style="width: 100%">
+            新对话
+          </button>
+        </div>
+        <div class="conv-list" id="convList"></div>
+      </aside>
+      <main>
+        <div class="messages" id="messages">
+          <div class="empty">选择或新建一个对话开始提问</div>
+        </div>
+        <div class="composer">
+          <div class="profile-toggle" id="profileToggle">▸ 患者特征（可选，绑定当前对话）</div>
+          <div class="profile-grid" id="profileGrid">
+            <input id="age" placeholder="年龄" />
+            <input id="sex" placeholder="性别" />
+            <input id="chiefComplaint" placeholder="主诉" />
+            <input id="duration" placeholder="病程" />
+            <textarea id="keySymptoms" placeholder="关键症状"></textarea>
+            <textarea id="history" placeholder="既往史/家族史"></textarea>
+            <textarea id="labsOrImaging" placeholder="检查/化验/影像"></textarea>
+          </div>
+          <textarea id="question" placeholder="输入问题，支持多轮追问…"></textarea>
+          <div class="composer-row">
+            <label class="toggle"
+              ><input id="useRag" type="checkbox" checked /> RAG</label
+            >
+            <label>top_k <input id="topk" type="number" value="5" min="1" max="20" style="width: 60px" /></label>
+            <button class="btn-primary" id="sendBtn" type="button">发送</button>
+            <button class="btn-danger" id="deleteConvBtn" type="button">删除对话</button>
+          </div>
+        </div>
+      </main>
+    </div>
+    <script>
+      const TOKEN_KEY = "rag_token";
+      const USER_KEY = "rag_username";
+      let token = localStorage.getItem(TOKEN_KEY);
+
+      let currentConvId = null;
+
+      const usernameLabel = document.getElementById("usernameLabel");
+      const convListEl = document.getElementById("convList");
+      const messagesEl = document.getElementById("messages");
+      const questionEl = document.getElementById("question");
+      const sendBtn = document.getElementById("sendBtn");
+      const newConvBtn = document.getElementById("newConvBtn");
+      const deleteConvBtn = document.getElementById("deleteConvBtn");
+      const logoutBtn = document.getElementById("logoutBtn");
+      const profileToggle = document.getElementById("profileToggle");
+      const profileGrid = document.getElementById("profileGrid");
+      const useRagEl = document.getElementById("useRag");
+      const topkEl = document.getElementById("topk");
+
+      const profileFields = {
+        age: document.getElementById("age"),
+        sex: document.getElementById("sex"),
+        chief_complaint: document.getElementById("chiefComplaint"),
+        key_symptoms: document.getElementById("keySymptoms"),
+        duration: document.getElementById("duration"),
+        history: document.getElementById("history"),
+        labs_or_imaging: document.getElementById("labsOrImaging"),
+      };
+
+      function goLogin(mode) {
+        localStorage.removeItem(TOKEN_KEY);
+        localStorage.removeItem(USER_KEY);
+        token = null;
+        const q = mode === "login" ? "?mode=login" : "";
+        window.location.replace("/login" + q);
+      }
+
+      function authHeaders() {
+        return {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        };
+      }
+
+      profileToggle.addEventListener("click", () => {
+        profileGrid.classList.toggle("open");
+        profileToggle.textContent = profileGrid.classList.contains("open")
+          ? "▾ 患者特征（可选，绑定当前对话）"
+          : "▸ 患者特征（可选，绑定当前对话）";
+      });
+
+      function readProfilePayload() {
+        const payload = {};
+        for (const [key, el] of Object.entries(profileFields)) {
+          payload[key] = el.value.trim();
+        }
+        return payload;
+      }
+
+      function fillProfile(profile) {
+        const p = profile || {};
+        profileFields.age.value = p.age || "";
+        profileFields.sex.value = p.sex || "";
+        profileFields.chief_complaint.value = p.chief_complaint || "";
+        profileFields.key_symptoms.value = p.key_symptoms || "";
+        profileFields.duration.value = p.duration || "";
+        profileFields.history.value = p.history || "";
+        profileFields.labs_or_imaging.value = p.labs_or_imaging || "";
+      }
+
+      function renderMessages(messages) {
+        if (!messages || messages.length === 0) {
+          messagesEl.innerHTML =
+            '<div class="empty">暂无消息，在下方输入第一个问题</div>';
+          return;
+        }
+        messagesEl.innerHTML = "";
+        for (const m of messages) {
+          const div = document.createElement("div");
+          div.className = `msg ${m.role}`;
+          const meta = document.createElement("div");
+          meta.className = "meta";
+          meta.textContent = m.role === "user" ? "你" : "助手";
+          div.appendChild(meta);
+          const body = document.createElement("div");
+          body.textContent = m.content || "";
+          div.appendChild(body);
+          if (m.role === "assistant" && m.citations && m.citations.length) {
+            const cit = document.createElement("div");
+            cit.className = "citations";
+            cit.textContent =
+              "引用: " +
+              m.citations
+                .map((c) => `${c.rank}. ${c.title} (${c.field})`)
+                .join(" · ");
+            div.appendChild(cit);
+          }
+          messagesEl.appendChild(div);
+        }
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+      }
+
+      async function api(path, options = {}) {
+        const res = await fetch(path, {
+          ...options,
+          headers: { ...authHeaders(), ...(options.headers || {}) },
+        });
+        const data = await res.json().catch(() => ({}));
+        if (res.status === 401) {
+          goLogin("login");
+          throw new Error("登录已失效，请重新登录");
+        }
+        if (!res.ok) {
+          const detail = data.detail;
+          throw new Error(
+            typeof detail === "string" ? detail : JSON.stringify(data)
+          );
+        }
+        return data;
+      }
+
+      async function loadConversations() {
+        const data = await api("/conversations");
+        convListEl.innerHTML = "";
+        for (const c of data.conversations || []) {
+          const item = document.createElement("div");
+          item.className =
+            "conv-item" + (c.id === currentConvId ? " active" : "");
+          item.dataset.id = c.id;
+          item.innerHTML = `<strong>${escapeHtml(c.title)}</strong><small>${c.message_count} 条消息</small>`;
+          item.addEventListener("click", () => selectConversation(c.id));
+          convListEl.appendChild(item);
+        }
+      }
+
+      function escapeHtml(s) {
+        return String(s)
+          .replace(/&/g, "&amp;")
+          .replace(/</g, "&lt;")
+          .replace(/>/g, "&gt;");
+      }
+
+      async function selectConversation(id) {
+        currentConvId = id;
+        const data = await api(`/conversations/${id}`);
+        fillProfile(data.conversation?.patient_profile);
+        renderMessages(data.messages);
+        await loadConversations();
+      }
+
+      async function createConversation() {
+        const data = await api("/conversations", {
+          method: "POST",
+          body: JSON.stringify({
+            title: "新对话",
+            ...readProfilePayload(),
+          }),
+        });
+        currentConvId = data.conversation.id;
+        renderMessages([]);
+        await loadConversations();
+      }
+
+      async function sendMessage() {
+        const question = questionEl.value.trim();
+        if (!question) return;
+        if (!currentConvId) {
+          await createConversation();
+        }
+        sendBtn.disabled = true;
+        try {
+          const data = await api(
+            `/conversations/${currentConvId}/messages`,
+            {
+              method: "POST",
+              body: JSON.stringify({
+                question,
+                top_k: Number(topkEl.value || 5),
+                use_rag: useRagEl.checked,
+                ...readProfilePayload(),
+              }),
+            }
+          );
+          questionEl.value = "";
+          const full = await api(`/conversations/${currentConvId}`);
+          renderMessages(full.messages);
+          await loadConversations();
+        } catch (e) {
+          alert(String(e));
+        } finally {
+          sendBtn.disabled = false;
+        }
+      }
+
+      newConvBtn.addEventListener("click", createConversation);
+      sendBtn.addEventListener("click", sendMessage);
+      questionEl.addEventListener("keydown", (e) => {
+        if (e.key === "Enter" && !e.shiftKey) {
+          e.preventDefault();
+          sendMessage();
+        }
+      });
+      deleteConvBtn.addEventListener("click", async () => {
+        if (!currentConvId) return;
+        if (!confirm("确定删除当前对话？")) return;
+        await api(`/conversations/${currentConvId}`, { method: "DELETE" });
+        currentConvId = null;
+        renderMessages([]);
+        fillProfile({});
+        await loadConversations();
+      });
+      logoutBtn.addEventListener("click", () => goLogin("login"));
+
+      async function ensureAuth() {
+        if (!token) {
+          goLogin("register");
+          return false;
+        }
+        try {
+          const res = await fetch("/auth/me", { headers: authHeaders() });
+          if (!res.ok) {
+            goLogin("login");
+            return false;
+          }
+          const me = await res.json();
+          usernameLabel.textContent = me.username || localStorage.getItem(USER_KEY) || "用户";
+          localStorage.setItem(USER_KEY, usernameLabel.textContent);
+          return true;
+        } catch {
+          goLogin("register");
+          return false;
+        }
+      }
+
+      ensureAuth().then((ok) => {
+        if (ok) loadConversations().catch((e) => alert(String(e)));
+      });
+    </script>
+  </body>
+</html>
