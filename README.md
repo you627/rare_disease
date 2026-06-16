@@ -95,7 +95,7 @@ copy .env.example .env
 编辑 `.env` 文件，配置智谱AI API密钥：
 
 ```env
-# 智谱AI API配置（GLM-4-Flash 免费版）
+# 智谱AI API配置（GLM-4-Flash）
 OPENAI_BASE_URL=https://open.bigmodel.cn/api/paas/v4
 OPENAI_MODEL=glm-4-flash-250414
 OPENAI_API_KEY=your_api_key_here
